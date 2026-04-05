@@ -1,0 +1,119 @@
+version: "3.8"
+
+services:
+  mongodb-users:
+    image: mongo:7
+    container_name: mongodb-users
+    ports:
+      - "27017:27017"
+    networks:
+      - ecommerce-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongodb-products:
+    image: mongo:7
+    container_name: mongodb-products
+    ports:
+      - "27018:27017"
+    networks:
+      - ecommerce-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongodb-orders:
+    image: mongo:7
+    container_name: mongodb-orders
+    ports:
+      - "27019:27017"
+    networks:
+      - ecommerce-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongodb-notifications:
+    image: mongo:7
+    container_name: mongodb-notifications
+    ports:
+      - "27020:27017"
+    networks:
+      - ecommerce-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user-service:
+    build: 
+      context: ./user-service
+    container_name: user-service
+    ports:
+      - "8001:8001"
+    environment:
+      - MONGO_URI=mongodb://mongodb-users:27017/users_db
+      - JWT_SECRET=supersecretkey_please_change_in_prod
+    networks:
+      - ecommerce-net
+    depends_on:
+      mongodb-users:
+        condition: service_healthy
+
+  product-service:
+    build:
+      context: ./product-service
+    container_name: product-service
+    ports:
+      - "8002:8002"
+    environment:
+      - MONGO_URI=mongodb://mongodb-products:27017/products_db
+      - JWT_SECRET=supersecretkey_please_change_in_prod
+    networks:
+      - ecommerce-net
+    depends_on:
+      mongodb-products:
+        condition: service_healthy
+
+  order-service:
+    build:
+      context: ./order-service
+    container_name: order-service
+    ports:
+      - "8003:8003"
+    environment:
+      - MONGO_URI=mongodb://mongodb-orders:27017/orders_db
+      - JWT_SECRET=supersecretkey_please_change_in_prod
+      - PRODUCT_SERVICE_URL=http://product-service:8002
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8004
+    networks:
+      - ecommerce-net
+    depends_on:
+      mongodb-orders:
+        condition: service_healthy
+
+  notification-service:
+    build:
+      context: ./notification-service
+    container_name: notification-service
+    ports:
+      - "8004:8004"
+    environment:
+      - MONGO_URI=mongodb://mongodb-notifications:27017/notifications_db
+    networks:
+      - ecommerce-net
+    depends_on:
+      mongodb-notifications:
+        condition: service_healthy
+
+networks:
+  ecommerce-net:
+    driver: bridge
