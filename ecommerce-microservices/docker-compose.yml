@@ -94,6 +94,20 @@ services:
     depends_on:
       - mongodb-notifications
 
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    ports:
+      - "8080:8080"
+    networks:
+      - ecommerce-net
+    depends_on:
+      - user-service
+      - product-service
+      - order-service
+      - notification-service
+
 networks:
   ecommerce-net:
     driver: bridge
