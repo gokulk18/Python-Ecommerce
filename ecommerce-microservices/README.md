@@ -1,113 +1,84 @@
-# E-Commerce Microservices
+# Nexus Store Microservices Architecture
 
-A fully working, production-ready 3-tier e-commerce microservices application using Python (FastAPI), MongoDB, Docker, and Kubernetes.
+A full production-ready 3-tier e-commerce microservices application with a stunning React+Tailwind frontend UI ("NEXUS STORE") and 4 FastAPI microservices (Python 3.11 + Motor async MongoDB).
 
-## Services
+## Architecture
 
-* **User Service (8001)**: User registration, login, profile management.
-* **Product Service (8002)**: Product catalog management (requires JWT for creation).
-* **Order Service (8003)**: Processing orders and checking inventory via Product Service, and dispatching events to Notification Service.
-* **Notification Service (8004)**: Simulating sending emails to users upon system events.
+1. **Frontend**: React + Vite + Tailwind CSS (Port 3000 mapped to NGINX 80 in Docker)
+2. **User Service**: FastAPI on Port 8001 (JWT Auth) + MongoDB (user-mongo:27017)
+3. **Product Service**: FastAPI on Port 8002 + MongoDB (product-mongo:27018)
+4. **Order Service**: FastAPI on Port 8003 + MongoDB (order-mongo:27019)
+5. **Notification Service**: FastAPI on Port 8004 + MongoDB (notification-mongo:27020)
 
-Each service has its independent MongoDB database instance.
+## Run Locally with Docker Compose
 
----
-
-## How to run with Docker Compose
-
-To build and run all 4 microservices + 4 MongoDB instances on a shared local docker network `ecommerce-net`:
+Ensure Docker Desktop / Docker Compose is installed. From the root directory, simply run:
 
 ```bash
-docker-compose up --build
-```
-This maps the respective DB instances to your host (27017-27020) and application APIS to (8001-8004).
-
----
-
-## How to deploy to Kubernetes
-
-Ensure your local cluster (like minikube or docker desktop) is running.
-
-```bash
-# Apply the namespace, databases and all service deployments
-kubectl apply -f k8s/
-```
-Verify the resources using:
-```bash
-kubectl get pods -n ecommerce
-kubectl get svc -n ecommerce
-kubectl get statefulsets -n ecommerce
+docker-compose up --build -d
 ```
 
----
+This will spin up 4 MongoDB instances, 4 FastAPI services, and 1 frontend React app.
 
-## API Endpoints List
+The frontend is available at `http://localhost:3000`.
+FastAPI Swagger docs are available at:
+- `http://localhost:8001/docs` (User Service)
+- `http://localhost:8002/docs` (Product Service)
+- `http://localhost:8003/docs` (Order Service)
+- `http://localhost:8004/docs` (Notification Service)
 
-### User Service (`http://localhost:8001`)
-- `POST /auth/register` (Register new user)
-- `POST /auth/login` (Login and get JWT)
-- `GET /users/me` (Get logged in user profile, needs JWT)
-- `PUT /users/me` (Update logged in user profile, needs JWT)
-- `GET /health` (Health check)
+## Kubernetes Deployment (EC2 Notes)
 
-### Product Service (`http://localhost:8002`)
-- `GET /products` (List products)
-- `GET /products/{id}` (Get single product by ID)
-- `POST /products` (Create product, needs JWT)
-- `PUT /products/{id}` (Update product)
-- `DELETE /products/{id}` (Soft delete product)
-- `GET /health` (Health check)
+If deploying to an EC2 instance, ensure your Security Group has the following TCP ports open:
+- `3000` (Local Frontend DEV / General use)
+- `8001-8004` (FastAPI Microservices API access via direct testing if needed)
+- `30000` (Kubernetes NodePort for Frontend)
 
-### Order Service (`http://localhost:8003`)
-- `POST /orders` (Create order, needs JWT)
-- `GET /orders` (List user orders, needs JWT)
-- `GET /orders/{id}` (Get user order by ID, needs JWT)
-- `PUT /orders/{id}/cancel` (Cancel order and restore stock, needs JWT)
-- `GET /health` (Health check)
+### Deploy locally (Minikube/Kind) or via EC2 `kubectl`:
 
-### Notification Service (`http://localhost:8004`)
-- `POST /notify` (Send notification)
-- `GET /notifications/{user_id}` (List notifications for a user)
-- `GET /health` (Health check)
-
----
-
-## Sample curl commands
-
-### 1. Register a User
+1. Create the namespace first:
 ```bash
-curl -X POST "http://localhost:8001/auth/register" \
+kubectl apply -f k8s/namespace.yaml
+```
+
+2. Apply configuration and secrets:
+```bash
+kubectl apply -f k8s/configmap-secrets.yaml
+```
+
+3. Spin up StatefulSets for databases:
+```bash
+kubectl apply -f k8s/mongo-statefulsets.yaml
+```
+
+4. Deploy microservices & frontend:
+```bash
+kubectl apply -f k8s/user-service.yaml
+kubectl apply -f k8s/product-service.yaml
+kubectl apply -f k8s/notification-service.yaml
+kubectl apply -f k8s/order-service.yaml
+kubectl apply -f k8s/frontend.yaml
+```
+
+Access via node IP address `http://<EC2-PUBLIC-IP>:30000`.
+
+## Example cURL Traces
+
+**Check Notification Health:**
+```bash
+curl -X GET http://localhost:8004/health
+```
+
+**Register User:**
+```bash
+curl -X POST http://localhost:8001/auth/register \
      -H "Content-Type: application/json" \
-     -d '{"name": "Admin", "email": "admin@example.com", "password": "password123"}'
+     -d '{"name": "Admin User", "email": "admin@nexus.test", "password": "password123"}'
 ```
 
-### 2. Login to get token
+**Login:**
 ```bash
-curl -X POST "http://localhost:8001/auth/login" \
+curl -X POST http://localhost:8001/auth/login \
      -H "Content-Type: application/json" \
-     -d '{"email": "admin@example.com", "password": "password123"}'
-```
-*(Copy the `access_token` from the response to use as your `<JWT_TOKEN>` below)*
-
-### 3. Create a Product
-```bash
-curl -X POST "http://localhost:8002/products" \
-     -H "Authorization: Bearer <JWT_TOKEN>" \
-     -H "Content-Type: application/json" \
-     -d '{"name": "Laptop", "description": "Gaming Laptop", "price": 1200.00, "stock": 50, "category": "Electronics"}'
-```
-*(Copy the generated Product `id` to use as `<PRODUCT_ID>` below)*
-
-### 4. Create an Order
-```bash
-curl -X POST "http://localhost:8003/orders" \
-     -H "Authorization: Bearer <JWT_TOKEN>" \
-     -H "Content-Type: application/json" \
-     -d '{"items": [{"product_id": "<PRODUCT_ID>", "qty": 1, "price": 1200.00}]}'
-```
-
-### 5. Check Notifications
-*Replace `<USER_ID>` with the `id` from the registration step*
-```bash
-curl -X GET "http://localhost:8004/notifications/<USER_ID>"
+     -d '{"email": "admin@nexus.test", "password": "password123"}'
 ```

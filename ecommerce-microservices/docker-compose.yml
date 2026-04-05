@@ -1,112 +1,139 @@
-version: "3.8"
+version: '3.8'
 
 services:
-  mongodb-users:
+  # ---------------------
+  # DATABASES
+  # ---------------------
+  user-mongo:
     image: mongo:7
-    container_name: mongodb-users
+    container_name: user-mongo
     ports:
       - "27017:27017"
     networks:
       - ecommerce-net
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-
-  mongodb-products:
+  product-mongo:
     image: mongo:7
-    container_name: mongodb-products
+    container_name: product-mongo
     ports:
       - "27018:27017"
     networks:
       - ecommerce-net
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-
-  mongodb-orders:
+  order-mongo:
     image: mongo:7
-    container_name: mongodb-orders
+    container_name: order-mongo
     ports:
       - "27019:27017"
     networks:
       - ecommerce-net
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-
-  mongodb-notifications:
+  notification-mongo:
     image: mongo:7
-    container_name: mongodb-notifications
+    container_name: notification-mongo
     ports:
       - "27020:27017"
     networks:
       - ecommerce-net
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-
+  # ---------------------
+  # MICROSERVICES
+  # ---------------------
   user-service:
-    build: 
-      context: ./user-service
+    build: ./user-service
     container_name: user-service
     ports:
       - "8001:8001"
     environment:
-      - MONGO_URI=mongodb://mongodb-users:27017/users_db
-      - JWT_SECRET=supersecretkey_please_change_in_prod
+      - MONGO_URI=mongodb://user-mongo:27017
+      - JWT_SECRET=supersecretjwtkey_123
+    depends_on:
+      user-mongo:
+        condition: service_healthy
     networks:
       - ecommerce-net
-    depends_on:
-      - mongodb-users
 
   product-service:
-    build:
-      context: ./product-service
+    build: ./product-service
     container_name: product-service
     ports:
       - "8002:8002"
     environment:
-      - MONGO_URI=mongodb://mongodb-products:27017/products_db
-      - JWT_SECRET=supersecretkey_please_change_in_prod
+      - MONGO_URI=mongodb://product-mongo:27017
+    depends_on:
+      product-mongo:
+        condition: service_healthy
     networks:
       - ecommerce-net
-    depends_on:
-      - mongodb-products
 
   order-service:
-    build:
-      context: ./order-service
+    build: ./order-service
     container_name: order-service
     ports:
       - "8003:8003"
     environment:
-      - MONGO_URI=mongodb://mongodb-orders:27017/orders_db
-      - JWT_SECRET=supersecretkey_please_change_in_prod
+      - MONGO_URI=mongodb://order-mongo:27017
+      - JWT_SECRET=supersecretjwtkey_123
       - PRODUCT_SERVICE_URL=http://product-service:8002
       - NOTIFICATION_SERVICE_URL=http://notification-service:8004
+    depends_on:
+      order-mongo:
+        condition: service_healthy
+      product-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
     networks:
       - ecommerce-net
-    depends_on:
-      - mongodb-orders
 
   notification-service:
-    build:
-      context: ./notification-service
+    build: ./notification-service
     container_name: notification-service
     ports:
       - "8004:8004"
     environment:
-      - MONGO_URI=mongodb://mongodb-notifications:27017/notifications_db
+      - MONGO_URI=mongodb://notification-mongo:27017
+    depends_on:
+      notification-mongo:
+        condition: service_healthy
     networks:
       - ecommerce-net
-    depends_on:
-      - mongodb-notifications
 
+  # ---------------------
+  # FRONTEND
+  # ---------------------
   frontend:
-    build:
-      context: ./frontend
+    build: ./frontend
     container_name: frontend
     ports:
-      - "8080:8080"
-    networks:
-      - ecommerce-net
+      - "3000:80"
     depends_on:
       - user-service
       - product-service
       - order-service
       - notification-service
+    networks:
+      - ecommerce-net
 
 networks:
   ecommerce-net:

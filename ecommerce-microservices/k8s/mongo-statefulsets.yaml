@@ -1,0 +1,185 @@
+# We deploy 4 distinct Mongo statefulsets for the microservices
+# NOTE: In production, you'd use a real Mongo operator.
+
+# 1. User Mongo
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: user-mongo
+  namespace: ecommerce
+spec:
+  serviceName: "user-mongo"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-mongo
+  template:
+    metadata:
+      labels:
+        app: user-mongo
+    spec:
+      containers:
+      - name: mongo
+        image: mongo:7
+        ports:
+        - containerPort: 27017
+        volumeMounts:
+        - name: user-mongo-pvc
+          mountPath: /data/db
+  volumeClaimTemplates:
+  - metadata:
+      name: user-mongo-pvc
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-mongo
+  namespace: ecommerce
+spec:
+  selector:
+    app: user-mongo
+  ports:
+    - port: 27017
+
+---
+# 2. Product Mongo
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: product-mongo
+  namespace: ecommerce
+spec:
+  serviceName: "product-mongo"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: product-mongo
+  template:
+    metadata:
+      labels:
+        app: product-mongo
+    spec:
+      containers:
+      - name: mongo
+        image: mongo:7
+        ports:
+        - containerPort: 27017
+        volumeMounts:
+        - name: product-mongo-pvc
+          mountPath: /data/db
+  volumeClaimTemplates:
+  - metadata:
+      name: product-mongo-pvc
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-mongo
+  namespace: ecommerce
+spec:
+  selector:
+    app: product-mongo
+  ports:
+    - port: 27017
+
+---
+# 3. Order Mongo
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: order-mongo
+  namespace: ecommerce
+spec:
+  serviceName: "order-mongo"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-mongo
+  template:
+    metadata:
+      labels:
+        app: order-mongo
+    spec:
+      containers:
+      - name: mongo
+        image: mongo:7
+        ports:
+        - containerPort: 27017
+        volumeMounts:
+        - name: order-mongo-pvc
+          mountPath: /data/db
+  volumeClaimTemplates:
+  - metadata:
+      name: order-mongo-pvc
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-mongo
+  namespace: ecommerce
+spec:
+  selector:
+    app: order-mongo
+  ports:
+    - port: 27017
+
+---
+# 4. Notification Mongo
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: notification-mongo
+  namespace: ecommerce
+spec:
+  serviceName: "notification-mongo"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-mongo
+  template:
+    metadata:
+      labels:
+        app: notification-mongo
+    spec:
+      containers:
+      - name: mongo
+        image: mongo:7
+        ports:
+        - containerPort: 27017
+        volumeMounts:
+        - name: notif-mongo-pvc
+          mountPath: /data/db
+  volumeClaimTemplates:
+  - metadata:
+      name: notif-mongo-pvc
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-mongo
+  namespace: ecommerce
+spec:
+  selector:
+    app: notification-mongo
+  ports:
+    - port: 27017

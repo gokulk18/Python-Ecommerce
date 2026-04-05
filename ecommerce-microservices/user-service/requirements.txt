@@ -1,8 +1,8 @@
-fastapi==0.110.0
-uvicorn[standard]
-motor>=3.6.0
-pydantic[email]>=2.0.0,<3.0.0
+fastapi
+uvicorn
+motor
+pydantic
 pydantic-settings
-python-jose[cryptography]
 passlib[bcrypt]
-python-dotenv
+python-jose[cryptography]
+python-multipart
