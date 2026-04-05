@@ -8,11 +8,7 @@ services:
       - "27017:27017"
     networks:
       - ecommerce-net
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+
 
   mongodb-products:
     image: mongo:7
@@ -21,11 +17,7 @@ services:
       - "27018:27017"
     networks:
       - ecommerce-net
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+
 
   mongodb-orders:
     image: mongo:7
@@ -34,11 +26,7 @@ services:
       - "27019:27017"
     networks:
       - ecommerce-net
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+
 
   mongodb-notifications:
     image: mongo:7
@@ -47,11 +35,7 @@ services:
       - "27020:27017"
     networks:
       - ecommerce-net
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+
 
   user-service:
     build: 
@@ -65,8 +49,7 @@ services:
     networks:
       - ecommerce-net
     depends_on:
-      mongodb-users:
-        condition: service_healthy
+      - mongodb-users
 
   product-service:
     build:
@@ -80,8 +63,7 @@ services:
     networks:
       - ecommerce-net
     depends_on:
-      mongodb-products:
-        condition: service_healthy
+      - mongodb-products
 
   order-service:
     build:
@@ -97,8 +79,7 @@ services:
     networks:
       - ecommerce-net
     depends_on:
-      mongodb-orders:
-        condition: service_healthy
+      - mongodb-orders
 
   notification-service:
     build:
@@ -111,8 +92,7 @@ services:
     networks:
       - ecommerce-net
     depends_on:
-      mongodb-notifications:
-        condition: service_healthy
+      - mongodb-notifications
 
 networks:
   ecommerce-net:
