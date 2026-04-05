@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-textMain font-body antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+  }
+}
+
+/* Custom Utilities for luxury feel */
+.glass-effect {
+  @apply bg-surface/80 backdrop-blur-md border border-borderMain;
+}
+
+.hover-glow {
+  @apply transition-all duration-300 hover:shadow-[0_0_15px_rgba(108,99,255,0.4)] hover:-translate-y-1;
+}
+
+.gradient-text {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary;
+}

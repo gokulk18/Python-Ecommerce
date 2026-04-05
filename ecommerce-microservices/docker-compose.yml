@@ -1,0 +1,126 @@
+version: '3.8'
+
+services:
+  user-service:
+    build: ./user-service
+    ports:
+      - "8001:8001"
+    environment:
+      - MONGO_URI=mongodb://mongodb-users:27017
+      - SECRET_KEY=nexus-store-secret-key
+    networks:
+      - ecommerce-net
+    depends_on:
+      - mongodb-users
+
+  product-service:
+    build: ./product-service
+    ports:
+      - "8002:8002"
+    environment:
+      - MONGO_URI=mongodb://mongodb-products:27017
+    networks:
+      - ecommerce-net
+    depends_on:
+      - mongodb-products
+
+  order-service:
+    build: ./order-service
+    ports:
+      - "8003:8003"
+    environment:
+      - MONGO_URI=mongodb://mongodb-orders:27017
+      - PRODUCT_SERVICE_URL=http://product-service:8002
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8004
+    networks:
+      - ecommerce-net
+    depends_on:
+      - mongodb-orders
+      - product-service
+      - notification-service
+
+  notification-service:
+    build: ./notification-service
+    ports:
+      - "8004:8004"
+    environment:
+      - MONGO_URI=mongodb://mongodb-notifications:27017
+    networks:
+      - ecommerce-net
+    depends_on:
+      - mongodb-notifications
+
+  admin-service:
+    build: ./admin-service
+    ports:
+      - "8005:8005"
+    environment:
+      - USER_SERVICE_URL=http://user-service:8001
+      - PRODUCT_SERVICE_URL=http://product-service:8002
+      - ORDER_SERVICE_URL=http://order-service:8003
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8004
+    networks:
+      - ecommerce-net
+    depends_on:
+      - user-service
+      - product-service
+      - order-service
+      - notification-service
+
+  mongodb-users:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    networks:
+      - ecommerce-net
+    volumes:
+      - mongodb_users_data:/data/db
+
+  mongodb-products:
+    image: mongo:7
+    ports:
+      - "27018:27017"
+    networks:
+      - ecommerce-net
+    volumes:
+      - mongodb_products_data:/data/db
+
+  mongodb-orders:
+    image: mongo:7
+    ports:
+      - "27019:27017"
+    networks:
+      - ecommerce-net
+    volumes:
+      - mongodb_orders_data:/data/db
+
+  mongodb-notifications:
+    image: mongo:7
+    ports:
+      - "27020:27017"
+    networks:
+      - ecommerce-net
+    volumes:
+      - mongodb_notifications_data:/data/db
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    networks:
+      - ecommerce-net
+    depends_on:
+      - user-service
+      - product-service
+      - order-service
+      - notification-service
+      - admin-service
+
+networks:
+  ecommerce-net:
+
+volumes:
+  mongodb_users_data:
+  mongodb_products_data:
+  mongodb_orders_data:
+  mongodb_notifications_data:
