@@ -11,11 +11,6 @@ services:
       - "27017:27017"
     networks:
       - ecommerce-net
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   product-mongo:
     image: mongo:7
@@ -24,11 +19,6 @@ services:
       - "27018:27017"
     networks:
       - ecommerce-net
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   order-mongo:
     image: mongo:7
@@ -37,11 +27,6 @@ services:
       - "27019:27017"
     networks:
       - ecommerce-net
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   notification-mongo:
     image: mongo:7
@@ -50,11 +35,6 @@ services:
       - "27020:27017"
     networks:
       - ecommerce-net
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   # ---------------------
   # MICROSERVICES
@@ -68,8 +48,7 @@ services:
       - MONGO_URI=mongodb://user-mongo:27017
       - JWT_SECRET=supersecretjwtkey_123
     depends_on:
-      user-mongo:
-        condition: service_healthy
+      - user-mongo
     networks:
       - ecommerce-net
 
@@ -81,8 +60,7 @@ services:
     environment:
       - MONGO_URI=mongodb://product-mongo:27017
     depends_on:
-      product-mongo:
-        condition: service_healthy
+      - product-mongo
     networks:
       - ecommerce-net
 
@@ -97,12 +75,9 @@ services:
       - PRODUCT_SERVICE_URL=http://product-service:8002
       - NOTIFICATION_SERVICE_URL=http://notification-service:8004
     depends_on:
-      order-mongo:
-        condition: service_healthy
-      product-service:
-        condition: service_started
-      notification-service:
-        condition: service_started
+      - order-mongo
+      - product-service
+      - notification-service
     networks:
       - ecommerce-net
 
@@ -114,8 +89,7 @@ services:
     environment:
       - MONGO_URI=mongodb://notification-mongo:27017
     depends_on:
-      notification-mongo:
-        condition: service_healthy
+      - notification-mongo
     networks:
       - ecommerce-net
 
